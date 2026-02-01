@@ -1,14 +1,17 @@
-let dictionary = window.torwaliDictionary || new TorwaliDictionary();
+// Matches the global instance created in wordlist.js
+let dictionary = window.dictionary || new TorwaliDictionary();
 let errors = [];
 
 Office.onReady((info) => {
     if (info.host === Office.HostType.Word) {
-        // Setup UI
         setupEventListeners();
         
-        // Show dictionary status
         const stats = dictionary.getStats();
-        showStatus(`Torwali Dictionary: ${stats.totalWords} words loaded`, 'success', 'documentStatus');
+        if (stats.totalWords > 0) {
+            showStatus(`Torwali Dictionary: ${stats.totalWords} words loaded`, 'success', 'documentStatus');
+        } else {
+            showStatus(`Warning: Dictionary is empty. check wordlist-data.js`, 'error', 'documentStatus');
+        }
     }
 });
 
@@ -17,7 +20,6 @@ function setupEventListeners() {
     document.getElementById("checkSelection").onclick = checkSelection;
     document.getElementById("addWord").onclick = addCustomWord;
     
-    // Enter key for adding words
     document.getElementById("newWord").addEventListener("keypress", function(e) {
         if (e.key === "Enter") addCustomWord();
     });
@@ -26,13 +28,12 @@ function setupEventListeners() {
 async function checkDocument() {
     showLoading(true);
     clearResults();
-    
     try {
         await Word.run(async (context) => {
             const body = context.document.body;
-            const searchResults = body.search("\\w+", { matchWildcards: true });
+            // Updated regex to better handle Torwali/Perso-Arabic script
+            const searchResults = body.search("[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF]+", { matchWildcards: true });
             context.load(searchResults, "text");
-            
             await context.sync();
             
             errors = [];
@@ -40,17 +41,10 @@ async function checkDocument() {
                 const word = range.text.trim();
                 if (word && !dictionary.isValidWord(word)) {
                     const suggestions = dictionary.getSuggestions(word);
-                    errors.push({
-                        word: word,
-                        range: range,
-                        suggestions: suggestions,
-                        context: context
-                    });
+                    errors.push({ word, range, suggestions });
                 }
             }
-            
             displayResults();
-            showStatus(`Found ${errors.length} spelling errors`, 'success');
         });
     } catch (error) {
         showStatus("Error: " + error.message, "error");
@@ -58,7 +52,6 @@ async function checkDocument() {
         showLoading(false);
     }
 }
-
 async function checkSelection() {
     showLoading(true);
     clearResults();
