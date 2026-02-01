@@ -1,16 +1,12 @@
-// Matches the global instance created in wordlist.js
-let dictionary = window.dictionary || new TorwaliDictionary();
+let dictionary = window.dictionary || window.torwaliDictionary || new TorwaliDictionary();
 let errors = [];
 
 Office.onReady((info) => {
     if (info.host === Office.HostType.Word) {
         setupEventListeners();
-        
         const stats = dictionary.getStats();
         if (stats.totalWords > 0) {
-            showStatus(`Torwali Dictionary: ${stats.totalWords} words loaded`, 'success', 'documentStatus');
-        } else {
-            showStatus(`Warning: Dictionary is empty. check wordlist-data.js`, 'error', 'documentStatus');
+            showStatus(`لغت تیار ہے: ${stats.totalWords} الفاظ ملے`, 'success', 'documentStatus');
         }
     }
 });
@@ -19,10 +15,6 @@ function setupEventListeners() {
     document.getElementById("checkDocument").onclick = checkDocument;
     document.getElementById("checkSelection").onclick = checkSelection;
     document.getElementById("addWord").onclick = addCustomWord;
-    
-    document.getElementById("newWord").addEventListener("keypress", function(e) {
-        if (e.key === "Enter") addCustomWord();
-    });
 }
 
 async function checkDocument() {
@@ -31,7 +23,7 @@ async function checkDocument() {
     try {
         await Word.run(async (context) => {
             const body = context.document.body;
-            // Updated regex to better handle Torwali/Perso-Arabic script
+            // Capture Torwali script characters correctly
             const searchResults = body.search("[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF]+", { matchWildcards: true });
             context.load(searchResults, "text");
             await context.sync();
@@ -52,126 +44,45 @@ async function checkDocument() {
         showLoading(false);
     }
 }
-async function checkSelection() {
-    showLoading(true);
-    clearResults();
-    
-    try {
-        await Word.run(async (context) => {
-            const selection = context.document.getSelection();
-            const searchResults = selection.search("\\w+", { matchWildcards: true });
-            context.load(searchResults, "text");
-            
-            await context.sync();
-            
-            errors = [];
-            for (const range of searchResults.items) {
-                const word = range.text.trim();
-                if (word && !dictionary.isValidWord(word)) {
-                    const suggestions = dictionary.getSuggestions(word);
-                    errors.push({
-                        word: word,
-                        range: range,
-                        suggestions: suggestions,
-                        context: context
-                    });
-                }
-            }
-            
-            displayResults();
-            showStatus(`Found ${errors.length} errors in selection`, 'success');
-        });
-    } catch (error) {
-        showStatus("Error: " + error.message, "error");
-    } finally {
-        showLoading(false);
-    }
-}
 
 function displayResults() {
-    const resultsDiv = document.getElementById("results");
+    const container = document.getElementById("results");
+    container.innerHTML = "";
     
     if (errors.length === 0) {
-        resultsDiv.innerHTML = '<div class="success status">No spelling errors found!</div>';
+        container.innerHTML = "<p style='padding:10px;'>کوئی غلطی نہیں ملی۔</p>";
         return;
     }
-    
-    let html = '<h3>Spelling Errors:</h3>';
-    
+
     errors.forEach((error, index) => {
-        html += `
-            <div class="error-item">
-                <strong>${error.word}</strong>
-                ${error.suggestions.length > 0 ? 
-                    `<div class="suggestions">
-                        Suggestions: 
-                        ${error.suggestions.map(suggestion => 
-                            `<span class="suggestion" onclick="replaceWord(${index}, '${suggestion.replace(/'/g, "\\'")}')">
-                                ${suggestion}
-                            </span>`
-                        ).join(' ')}
-                     </div>` : 
-                    '<div class="suggestions">No suggestions available</div>'
-                }
-                <div class="actions">
-                    <button onclick="ignoreWord(${index})">Ignore</button>
-                    <button onclick="addToDictionary(${index})">Add to Dictionary</button>
-                </div>
-            </div>
+        const div = document.createElement("div");
+        div.className = "error-item";
+        div.innerHTML = `
+            <div class="word-title">${error.word}</div>
+            <div class="suggestions" id="sug-${index}"></div>
+            <button class="secondary" onclick="ignoreError(${index})" style="width:auto; display:inline-block; margin-top:5px;">نظر انداز کریں</button>
         `;
-    });
-    
-    resultsDiv.innerHTML = html;
-}
+        container.appendChild(div);
 
-async function replaceWord(errorIndex, replacement) {
-    try {
-        await Word.run(async (context) => {
-            const error = errors[errorIndex];
-            error.range.insertText(replacement, "Replace");
-            await context.sync();
-            
-            // Remove from errors list
-            errors.splice(errorIndex, 1);
-            displayResults();
-            showStatus('Word replaced', 'success');
+        const sugContainer = document.getElementById(`sug-${index}`);
+        error.suggestions.forEach(sug => {
+            const btn = document.createElement("button");
+            btn.className = "suggestion-btn";
+            btn.textContent = sug;
+            btn.onclick = () => replaceWord(index, sug);
+            sugContainer.appendChild(btn);
         });
-    } catch (error) {
-        showStatus("Error: " + error.message, "error");
-    }
+    });
 }
 
-function ignoreWord(errorIndex) {
-    errors.splice(errorIndex, 1);
+async function replaceWord(index, newWord) {
+    const error = errors[index];
+    await Word.run(async (context) => {
+        error.range.insertText(newWord, "Replace");
+        await context.sync();
+    });
+    errors.splice(index, 1);
     displayResults();
-    showStatus('Word ignored', 'success');
-}
-
-function addToDictionary(errorIndex) {
-    const word = errors[errorIndex].word;
-    if (dictionary.addWord(word)) {
-        errors.splice(errorIndex, 1);
-        displayResults();
-        showStatus(`"${word}" added to dictionary`, 'success', 'wordStatus');
-    }
-}
-
-function addCustomWord() {
-    const newWordInput = document.getElementById("newWord");
-    const word = newWordInput.value.trim();
-    
-    if (!word) {
-        showStatus("Please enter a word", "error", "wordStatus");
-        return;
-    }
-    
-    if (dictionary.addWord(word)) {
-        showStatus(`"${word}" added to dictionary`, "success", "wordStatus");
-        newWordInput.value = "";
-        newWordInput.focus();
-    } else {
-        showStatus(`"${word}" already exists`, "error", "wordStatus");
-    }
 }
 
 function showStatus(message, type, elementId = "documentStatus") {
@@ -179,10 +90,6 @@ function showStatus(message, type, elementId = "documentStatus") {
     statusDiv.textContent = message;
     statusDiv.className = `status ${type}`;
     statusDiv.style.display = "block";
-    
-    setTimeout(() => {
-        statusDiv.style.display = "none";
-    }, 3000);
 }
 
 function showLoading(show) {
@@ -192,8 +99,3 @@ function showLoading(show) {
 function clearResults() {
     document.getElementById("results").innerHTML = "";
 }
-
-// Make functions available globally
-window.replaceWord = replaceWord;
-window.ignoreWord = ignoreWord;
-window.addToDictionary = addToDictionary;
