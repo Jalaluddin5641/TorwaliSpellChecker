@@ -4,27 +4,26 @@
            xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
            xsi:type="TaskPaneApp">
     
-    <!-- Generate a new GUID: Press Win+R, type "powershell", then: [guid]::NewGuid().ToString() -->
     <Id>c5e8b5a3-7d4f-4a8b-9c2d-1e3f5a7b9c0d</Id>
-    <Version>1.0.0.0</Version>
-    <ProviderName>Torwali Developer</ProviderName>
+    <Version>1.0.0.1</Version> <ProviderName>Torwali Developer</ProviderName>
     <DefaultLocale>en-US</DefaultLocale>
     <DisplayName DefaultValue="Torwali Spell Checker"/>
     <Description DefaultValue="Torwali language spell checker for Office"/>
     
-    <!-- Use file:// protocol for local files -->
-    <IconUrl DefaultValue="file:///C:/Users/Laptop%20Valley/Desktop/TorwaliSpellChecker/assets/icon-32.png"/>
-    <HighResolutionIconUrl DefaultValue="file:///C:/Users/Laptop%20Valley/Desktop/TorwaliSpellChecker/assets/icon-80.png"/>
+    <IconUrl DefaultValue="https://jalaluddin5641.github.io/TorwaliSpellChecker/assets/icon-32.png"/>
+    <HighResolutionIconUrl DefaultValue="https://jalaluddin5641.github.io/TorwaliSpellChecker/assets/icon-80.png"/>
     
-    <!-- Use shared folder path -->
-    <SupportUrl DefaultValue="file:///C:/Users/Laptop%20Valley/Desktop/TorwaliSpellChecker/support.html"/>
+    <SupportUrl DefaultValue="https://jalaluddin5641.github.io/TorwaliSpellChecker/README.md"/>
     
+    <AppDomains>
+        <AppDomain>https://jalaluddin5641.github.io</AppDomain>
+    </AppDomains>
+
     <Hosts>
         <Host Name="Document"/>
     </Hosts>
     
     <DefaultSettings>
-        <!-- Use file:// protocol -->
         <SourceLocation DefaultValue="https://jalaluddin5641.github.io/TorwaliSpellChecker/taskpane.html"/>
     </DefaultSettings>
     
