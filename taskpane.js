@@ -1,12 +1,25 @@
-let dictionary = window.dictionary || window.torwaliDictionary || new TorwaliDictionary();
+let dictionary;
 let errors = [];
 
 Office.onReady((info) => {
     if (info.host === Office.HostType.Word) {
+        // Safe check for the dictionary object
+        dictionary = window.dictionary || window.torwaliDictionary;
+        
         setupEventListeners();
-        const stats = dictionary.getStats();
-        if (stats.totalWords > 0) {
-            showStatus(`لغت تیار ہے: ${stats.totalWords} الفاظ ملے`, 'success', 'documentStatus');
+        
+        if (dictionary) {
+            const stats = dictionary.getStats();
+            if (stats.totalWords > 0) {
+                showStatus(`لغت تیار ہے: ${stats.totalWords} الفاظ ملے`, 'success', 'documentStatus');
+            }
+        } else {
+            showStatus("لغت لوڈ ہو رہی ہے... براہ کرم انتظار کریں", 'error', 'documentStatus');
+            // Try to reload dictionary after 2 seconds
+            setTimeout(() => {
+                dictionary = window.dictionary || window.torwaliDictionary;
+                if(dictionary) showStatus("لغت اب تیار ہے", 'success', 'documentStatus');
+            }, 2000);
         }
     }
 });
