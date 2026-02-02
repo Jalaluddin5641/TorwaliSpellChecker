@@ -11,9 +11,10 @@ echo Copying files...
 copy "manifest.xml" "package_temp\"
 copy "taskpane.html" "package_temp\"
 copy "taskpane.js" "package_temp\"
+copy "commands.html" "package_temp\"
+copy "commands.js" "package_temp\"
 copy "wordlist.js" "package_temp\"
 copy "wordlist-data.js" "package_temp\"
-copy "commands.js" "package_temp\"
 
 REM Create assets folder if needed
 if not exist "assets" mkdir "assets"
