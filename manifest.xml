@@ -5,24 +5,31 @@
            xsi:type="TaskPaneApp">
     
     <Id>c5e8b5a3-7d4f-4a8b-9c2d-1e3f5a7b9c0d</Id>
-    <Version>1.0.1.7</Version> <ProviderName>Torwali Developer</ProviderName>
+    <Version>1.0.1.7</Version>
+    <ProviderName>Torwali Developer</ProviderName>
     <DefaultLocale>en-US</DefaultLocale>
     <DisplayName DefaultValue="Torwali Spell Checker"/>
     <Description DefaultValue="Torwali language spell checker for Office"/>
     
-    <IconUrl DefaultValue="https://jalaluddin5641.github.io/TorwaliSpellChecker/assets/icon-32.png"/>
-    <HighResolutionIconUrl DefaultValue="https://jalaluddin5641.github.io/TorwaliSpellChecker/assets/icon-80.png"/>
+    <!-- CORRECTED: Use local assets or fix GitHub Pages -->
+    <IconUrl DefaultValue="https://raw.githubusercontent.com/Jalaluddin5641/TorwaliSpellChecker/main/assets/icon-32.png"/>
+    <HighResolutionIconUrl DefaultValue="https://raw.githubusercontent.com/Jalaluddin5641/TorwaliSpellChecker/main/assets/icon-80.png"/>
     
-    <AppDomains>
+    <!-- Remove AppDomains for local testing -->
+    <!-- <AppDomains>
         <AppDomain>https://jalaluddin5641.github.io</AppDomain>
-    </AppDomains>
+    </AppDomains> -->
 
     <Hosts>
         <Host Name="Document"/>
     </Hosts>
     
     <DefaultSettings>
-        <SourceLocation DefaultValue="https://jalaluddin5641.github.io/TorwaliSpellChecker/taskpane.html"/>
+        <!-- OPTION 1: Local testing (RECOMMENDED) -->
+       
+        
+        <!-- OPTION 2: If you want GitHub Pages (requires setup) -->
+         <SourceLocation DefaultValue="https://jalaluddin5641.github.io/TorwaliSpellChecker/taskpane.html"/> 
     </DefaultSettings>
     
     <Permissions>ReadWriteDocument</Permissions>
