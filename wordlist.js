@@ -31,7 +31,9 @@ class TorwaliDictionary {
         // 1. Trim whitespace
         // 2. Normalize to NFC (Fixes issues where 'کھ' might be stored differently than typed)
         // 3. Remove Zero-Width Non-Joiner (common in Arabic script typing)
-        const searchWord = word.trim().normalize('NFC').replace(/[\u200B-\u200D\uFEFF]/g, "");
+        const searchWord = word.trim()
+            .normalize('NFC')
+            .replace(/[\u200B-\u200D\uFEFF]/g, "");
 
         return this.wordSet.has(searchWord);
     }
