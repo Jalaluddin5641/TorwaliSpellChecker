@@ -9,14 +9,14 @@ class TorwaliDictionary {
 
     initialize() {
         try {
-            // Check if the data file loaded the array
             if (typeof torwaliWordlist !== 'undefined') {
-                this.wordList = [...torwaliWordlist].sort((a, b) => a.localeCompare(b));
+                // Normalize all words in the data list to NFC (Standard Unicode form)
+                this.wordList = torwaliWordlist.map(w => w.normalize('NFC').trim());
                 this.wordSet = new Set(this.wordList);
                 this.isLoaded = true;
+                console.log("Torwali Dictionary Loaded.");
             } else {
                 console.warn("torwaliWordlist not found");
-                this.wordList = [];
                 this.isLoaded = true;
             }
         } catch (error) {
@@ -27,22 +27,27 @@ class TorwaliDictionary {
 
     isValidWord(word) {
         if (!word) return false;
-        const searchWord = word.trim(); // Torwali is case-sensitive for some characters, so we avoid toLowerCase() if needed
+
+        // 1. Trim whitespace
+        // 2. Normalize to NFC (Fixes issues where 'کھ' might be stored differently than typed)
+        // 3. Remove Zero-Width Non-Joiner (common in Arabic script typing)
+        const searchWord = word.trim().normalize('NFC').replace(/[\u200B-\u200D\uFEFF]/g, "");
+
         return this.wordSet.has(searchWord);
     }
 
     getSuggestions(word) {
-        // Simple suggestion logic: find words starting with the same first two letters
-        const prefix = word.substring(0, 2);
+        const searchWord = word.trim().normalize('NFC');
+        const prefix = searchWord.substring(0, 1); // Use 1 character for broader suggestions
+        
         return this.wordList
             .filter(w => w.startsWith(prefix))
             .slice(0, 5);
     }
 
     getStats() {
-        return { totalWords: this.wordList.length };
+        return { totalWords: this.wordSet.size };
     }
 }
 
-// Attach to window so taskpane.js and commands.js can see it
 window.dictionary = new TorwaliDictionary();
