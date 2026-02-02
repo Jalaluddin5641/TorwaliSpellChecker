@@ -1,174 +1,196 @@
-let dictionary;
-let errors = [];
-
-Office.onReady((info) => {
-    if (info.host === Office.HostType.Word) {
-        // Safe check for the dictionary object
-        dictionary = window.dictionary || window.torwaliDictionary;
-        
-        setupEventListeners();
-        
-        if (dictionary) {
-            const stats = dictionary.getStats();
-            if (stats.totalWords > 0) {
-                showStatus(`لغت تیار ہے: ${stats.totalWords} الفاظ ملے`, 'success', 'documentStatus');
-            }
+// taskpane.js - Corrected version
+(function() {
+    "use strict";
+    
+    // 1. WAIT for Office to initialize
+    Office.onReady(function(info) {
+        if (info.host === Office.HostType.Word) {
+            console.log("Torwali Spell Checker loaded successfully!");
+            
+            // 2. Now initialize your functions
+            initializeButtons();
+            
+            // 3. Load wordlist AFTER Office is ready
+            loadWordlist();
         } else {
-            showStatus("لغت لوڈ ہو رہی ہے... براہ کرم انتظار کریں", 'error', 'documentStatus');
-            // Try to reload dictionary after 2 seconds
-            setTimeout(() => {
-                dictionary = window.dictionary || window.torwaliDictionary;
-                if(dictionary) showStatus("لغت اب تیار ہے", 'success', 'documentStatus');
-            }, 2000);
+            console.error("This add-in only works in Microsoft Word");
+        }
+    });
+    
+    // Your wordlist variable
+    let torwaliDictionary = [];
+    
+    function loadWordlist() {
+        try {
+            // Load from wordlist-data.js (already included)
+            if (typeof wordlist !== 'undefined') {
+                torwaliDictionary = wordlist;
+                console.log("Loaded " + torwaliDictionary.length + " Torwali words");
+                showStatus("wordStatus", "لغت لوڈ ہو گئی: " + torwaliDictionary.length + " الفاظ", "success");
+            } else {
+                console.error("wordlist-data.js not loaded properly");
+                showStatus("wordStatus", "لغت لوڈ نہیں ہو سکی", "error");
+            }
+        } catch (error) {
+            console.error("Error loading wordlist:", error);
         }
     }
-});
-
-function setupEventListeners() {
-    document.getElementById("checkDocument").onclick = checkDocument;
-    document.getElementById("checkSelection").onclick = checkSelection;
-    document.getElementById("addWord").onclick = addCustomWord;
-}
-
-async function checkDocument() {
-    showLoading(true);
-    clearResults();
-    try {
-        await Word.run(async (context) => {
-            const body = context.document.body;
-            // Capture Torwali script characters correctly
-            const searchResults = body.search("[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF]+", { matchWildcards: true });
-            context.load(searchResults, "text");
-            await context.sync();
-            
-            errors = [];
-            for (const range of searchResults.items) {
-                // IMPORTANT: Use normalize('NFC') to ensure matching with wordlist-data
-                const word = range.text.trim().normalize('NFC');
-                
-                if (word && !dictionary.isValidWord(word)) {
-                    const suggestions = dictionary.getSuggestions(word);
-                    errors.push({ word, range, suggestions });
-                }
-            }
-            displayResults();
-        });
-    } catch (error) {
-        showStatus("Error: " + error.message, "error");
-    } finally {
-        showLoading(false);
-    }
-}
-
-// Add this function to handle the "Check Selection" button which was missing logic
-async function checkSelection() {
-    showLoading(true);
-    clearResults();
-    try {
-        await Word.run(async (context) => {
-            const selection = context.document.getSelection();
-            const searchResults = selection.search("[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF]+", { matchWildcards: true });
-            context.load(searchResults, "text");
-            await context.sync();
-            
-            errors = [];
-            for (const range of searchResults.items) {
-                const word = range.text.trim().normalize('NFC');
-                if (word && !dictionary.isValidWord(word)) {
-                    const suggestions = dictionary.getSuggestions(word);
-                    errors.push({ word, range, suggestions });
-                }
-            }
-            displayResults();
-        });
-    } catch (error) {
-        showStatus("Error: " + error.message, "error");
-    } finally {
-        showLoading(false);
-    }
-}
-
-function displayResults() {
-    const container = document.getElementById("results");
-    container.innerHTML = "";
     
-    if (errors.length === 0) {
-        container.innerHTML = "<p style='padding:10px; color:green;'>کوئی غلطی نہیں ملی۔</p>";
-        return;
+    function initializeButtons() {
+        // Button click handlers - make sure elements exist
+        document.getElementById("checkDocument").addEventListener("click", checkDocument);
+        document.getElementById("checkSelection").addEventListener("click", checkSelection);
+        document.getElementById("addWord").addEventListener("click", addWordToDictionary);
     }
-
-    errors.forEach((error, index) => {
-        const div = document.createElement("div");
-        div.className = "error-item";
-        div.innerHTML = `
-            <div class="word-title">${error.word}</div>
-            <div class="suggestions" id="sug-${index}"></div>
-            <button class="secondary" onclick="ignoreError(${index})" style="width:auto; display:inline-block; margin-top:5px;">نظر انداز کریں</button>
-        `;
-        container.appendChild(div);
-
-        const sugContainer = document.getElementById(`sug-${index}`);
-        if (error.suggestions && error.suggestions.length > 0) {
-            error.suggestions.forEach(sug => {
-                const btn = document.createElement("button");
-                btn.className = "suggestion-btn";
-                btn.textContent = sug;
-                btn.onclick = () => replaceWord(index, sug);
-                sugContainer.appendChild(btn);
+    
+    function checkDocument() {
+        showLoading(true);
+        console.log("Checking entire document...");
+        
+        Word.run(function(context) {
+            var body = context.document.body;
+            context.load(body, 'text');
+            
+            return context.sync()
+                .then(function() {
+                    var text = body.text;
+                    console.log("Document text length:", text.length);
+                    // Call your spell check logic here
+                    performSpellCheck(text);
+                })
+                .catch(function(error) {
+                    console.error("Error:", error);
+                    showStatus("documentStatus", "خرابی: " + error.message, "error");
+                });
+        });
+    }
+    
+    function checkSelection() {
+        console.log("Checking selection...");
+        
+        Word.run(function(context) {
+            var selection = context.document.getSelection();
+            context.load(selection, 'text');
+            
+            return context.sync()
+                .then(function() {
+                    var text = selection.text;
+                    console.log("Selected text:", text);
+                    performSpellCheck(text);
+                });
+        });
+    }
+    
+    function addWordToDictionary() {
+        var newWord = document.getElementById("newWord").value.trim();
+        if (newWord) {
+            if (!torwaliDictionary.includes(newWord)) {
+                torwaliDictionary.push(newWord);
+                console.log("Added word:", newWord);
+                showStatus("wordStatus", "لفظ شامل کیا گیا: " + newWord, "success");
+                document.getElementById("newWord").value = "";
+            } else {
+                showStatus("wordStatus", "لفظ پہلے سے موجود ہے", "error");
+            }
+        }
+    }
+    
+    function performSpellCheck(text) {
+        // Basic spell check logic
+        var words = text.split(/\s+/);
+        var errors = [];
+        
+        words.forEach(function(word, index) {
+            if (word.length > 0 && !torwaliDictionary.includes(word.toLowerCase())) {
+                errors.push({
+                    word: word,
+                    position: index,
+                    suggestions: getSuggestions(word)
+                });
+            }
+        });
+        
+        displayResults(errors);
+        showLoading(false);
+    }
+    
+    function getSuggestions(word) {
+        // Basic suggestion algorithm
+        var suggestions = [];
+        var maxDistance = 2;
+        
+        torwaliDictionary.forEach(function(dictWord) {
+            // Simple distance check (implement proper algorithm)
+            if (Math.abs(dictWord.length - word.length) <= maxDistance) {
+                suggestions.push(dictWord);
+            }
+        });
+        
+        return suggestions.slice(0, 5); // Return top 5
+    }
+    
+    function displayResults(errors) {
+        var resultsDiv = document.getElementById("results");
+        resultsDiv.innerHTML = "";
+        
+        if (errors.length === 0) {
+            resultsDiv.innerHTML = "<div class='success status'>کوئی غلطی نہیں ملی!</div>";
+            return;
+        }
+        
+        errors.forEach(function(error) {
+            var errorHtml = '<div class="error-item">';
+            errorHtml += '<div class="word-title">' + error.word + '</div>';
+            errorHtml += '<div class="suggestions">';
+            
+            error.suggestions.forEach(function(suggestion) {
+                errorHtml += '<button class="suggestion-btn" onclick="replaceWord(\'' + error.word + '\', \'' + suggestion + '\')">' + suggestion + '</button>';
             });
-        } else {
-            sugContainer.innerHTML = "<small style='color:#666;'>کوئی تجویز نہیں ملی</small>";
-        }
-    });
-}
-
-async function replaceWord(index, newWord) {
-    const error = errors[index];
-    await Word.run(async (context) => {
-        error.range.insertText(newWord, "Replace");
-        await context.sync();
-    });
-    // Remove from UI after replacement
-    errors.splice(index, 1);
-    displayResults();
-}
-
-// Define ignoreError which was being called but not defined
-function ignoreError(index) {
-    errors.splice(index, 1);
-    displayResults();
-}
-
-async function addCustomWord() {
-    const newWordInput = document.getElementById("newWord");
-    const word = newWordInput.value.trim().normalize('NFC');
-    
-    if (!word) {
-        showStatus("براہ کرم لفظ درج کریں", "error", "wordStatus");
-        return;
+            
+            errorHtml += '</div></div>';
+            resultsDiv.innerHTML += errorHtml;
+        });
+        
+        showStatus("documentStatus", errors.length + " غلطیاں ملیں", "error");
     }
     
-    // Check if dictionary has an addWord method (from your wordlist.js)
-    if (dictionary.addWord && dictionary.addWord(word)) {
-        showStatus(`"${word}" لغت میں شامل کر دیا گیا`, "success", "wordStatus");
-        newWordInput.value = "";
-    } else {
-        showStatus("لفظ پہلے سے موجود ہے یا خرابی آئی", "error", "wordStatus");
+    function replaceWord(oldWord, newWord) {
+        Word.run(function(context) {
+            var searchResults = context.document.body.search(oldWord, {matchCase: false});
+            context.load(searchResults, 'text');
+            
+            return context.sync()
+                .then(function() {
+                    searchResults.items[0].insertText(newWord, 'Replace');
+                    return context.sync();
+                })
+                .then(function() {
+                    console.log("Replaced", oldWord, "with", newWord);
+                    checkDocument(); // Refresh check
+                });
+        });
     }
-}
-
-function showStatus(message, type, elementId = "documentStatus") {
-    const statusDiv = document.getElementById(elementId);
-    statusDiv.textContent = message;
-    statusDiv.className = `status ${type}`;
-    statusDiv.style.display = "block";
-    setTimeout(() => { statusDiv.style.display = "none"; }, 4000);
-}
-
-function showLoading(show) {
-    document.getElementById("loading").style.display = show ? "block" : "none";
-}
-
-function clearResults() {
-    document.getElementById("results").innerHTML = "";
-}
+    
+    function showLoading(show) {
+        document.getElementById("loading").style.display = show ? "block" : "none";
+    }
+    
+    function showStatus(elementId, message, type) {
+        var element = document.getElementById(elementId);
+        element.textContent = message;
+        element.className = "status " + type;
+        element.style.display = "block";
+        
+        // Auto-hide after 5 seconds
+        setTimeout(function() {
+            element.style.display = "none";
+        }, 5000);
+    }
+    
+    // Make functions available globally for onclick handlers
+    window.checkDocument = checkDocument;
+    window.checkSelection = checkSelection;
+    window.addWordToDictionary = addWordToDictionary;
+    window.replaceWord = replaceWord;
+    
+})();
