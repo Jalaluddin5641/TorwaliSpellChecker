@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Torwali Spell Checker</title>
     
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+
     <style>
         /* Microsoft Fabric UI inspired styles */
         body {
@@ -85,7 +87,7 @@
             margin-bottom: 10px;
             border: 1px solid #8a8886;
             font-size: 14px;
-            text-align: right; /* RTL input */
+            text-align: right;
         }
 
         .status {
@@ -105,7 +107,7 @@
 
         .error-item {
             background: #fff;
-            border-right: 4px solid #a4262c; /* Red bar on the right for RTL */
+            border-right: 4px solid #a4262c;
             padding: 10px;
             margin-bottom: 10px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
@@ -167,8 +169,7 @@
 
         <div id="loading">چیک کیا جا رہا ہے... براہ کرم انتظار کریں</div>
 
-        <div id="results" class="results-area">
-            </div>
+        <div id="results" class="results-area"></div>
     </div>
 
     <script src="wordlist-data.js"></script>
