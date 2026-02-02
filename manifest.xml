@@ -5,15 +5,13 @@
            xsi:type="TaskPaneApp">
     
     <Id>c5e8b5a3-7d4f-4a8b-9c2d-1e3f5a7b9c0d</Id>
-    <Version>1.0.0.2</Version>
-    <ProviderName>Torwali Developer</ProviderName>
+    <Version>1.0.0.5</Version> <ProviderName>Torwali Developer</ProviderName>
     <DefaultLocale>en-US</DefaultLocale>
     <DisplayName DefaultValue="Torwali Spell Checker"/>
     <Description DefaultValue="Torwali language spell checker for Office"/>
     
     <IconUrl DefaultValue="https://jalaluddin5641.github.io/TorwaliSpellChecker/assets/icon-32.png"/>
     <HighResolutionIconUrl DefaultValue="https://jalaluddin5641.github.io/TorwaliSpellChecker/assets/icon-80.png"/>
-    <SupportUrl DefaultValue="https://jalaluddin5641.github.io/TorwaliSpellChecker/README.md"/>
     
     <AppDomains>
         <AppDomain>https://jalaluddin5641.github.io</AppDomain>
