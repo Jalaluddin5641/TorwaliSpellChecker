@@ -1,0 +1,50 @@
+name: Build and Release Torwali Spell Checker
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Create package folder
+      run: |
+        mkdir package_temp
+        copy manifest.xml package_temp\
+        copy taskpane.html package_temp\
+        copy taskpane.js package_temp\
+        copy commands.html package_temp\
+        copy commands.js package_temp\
+        copy wordlist.js package_temp\
+        copy wordlist-data.js package_temp\
+        if exist assets xcopy assets package_temp\assets /E /I /Y
+      
+    - name: Create ZIP package
+      run: |
+        cd package_temp
+        Compress-Archive -Path * -DestinationPath ..\TorwaliSpellChecker.zip -Force
+        cd ..
+      
+    - name: Rename to .officeaddin
+      run: |
+        ren TorwaliSpellChecker.zip TorwaliSpellChecker.officeaddin
+      
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: TorwaliSpellChecker
+        path: TorwaliSpellChecker.officeaddin
+        
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: TorwaliSpellChecker.officeaddin
+        generate_release_notes: true
