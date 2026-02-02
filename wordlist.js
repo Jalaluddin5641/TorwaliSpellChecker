@@ -41,7 +41,15 @@ class TorwaliDictionary {
             .slice(0, 5)
             .map(item => item.word);
     }
-
+addWord(word) {
+    const normalized = word.trim().normalize('NFC');
+    if (!this.wordSet.has(normalized)) {
+        this.wordSet.add(normalized);
+        this.wordList.push(normalized);
+        return true;
+    }
+    return false;
+}
     // Levenshtein Distance Algorithm
     calculateSimilarity(s1, s2) {
         const costs = [];
