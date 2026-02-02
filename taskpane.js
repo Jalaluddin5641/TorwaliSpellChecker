@@ -30,7 +30,37 @@ async function checkDocument() {
             
             errors = [];
             for (const range of searchResults.items) {
-                const word = range.text.trim();
+                // IMPORTANT: Use normalize('NFC') to ensure matching with wordlist-data
+                const word = range.text.trim().normalize('NFC');
+                
+                if (word && !dictionary.isValidWord(word)) {
+                    const suggestions = dictionary.getSuggestions(word);
+                    errors.push({ word, range, suggestions });
+                }
+            }
+            displayResults();
+        });
+    } catch (error) {
+        showStatus("Error: " + error.message, "error");
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Add this function to handle the "Check Selection" button which was missing logic
+async function checkSelection() {
+    showLoading(true);
+    clearResults();
+    try {
+        await Word.run(async (context) => {
+            const selection = context.document.getSelection();
+            const searchResults = selection.search("[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF]+", { matchWildcards: true });
+            context.load(searchResults, "text");
+            await context.sync();
+            
+            errors = [];
+            for (const range of searchResults.items) {
+                const word = range.text.trim().normalize('NFC');
                 if (word && !dictionary.isValidWord(word)) {
                     const suggestions = dictionary.getSuggestions(word);
                     errors.push({ word, range, suggestions });
@@ -50,7 +80,7 @@ function displayResults() {
     container.innerHTML = "";
     
     if (errors.length === 0) {
-        container.innerHTML = "<p style='padding:10px;'>کوئی غلطی نہیں ملی۔</p>";
+        container.innerHTML = "<p style='padding:10px; color:green;'>کوئی غلطی نہیں ملی۔</p>";
         return;
     }
 
@@ -65,13 +95,17 @@ function displayResults() {
         container.appendChild(div);
 
         const sugContainer = document.getElementById(`sug-${index}`);
-        error.suggestions.forEach(sug => {
-            const btn = document.createElement("button");
-            btn.className = "suggestion-btn";
-            btn.textContent = sug;
-            btn.onclick = () => replaceWord(index, sug);
-            sugContainer.appendChild(btn);
-        });
+        if (error.suggestions && error.suggestions.length > 0) {
+            error.suggestions.forEach(sug => {
+                const btn = document.createElement("button");
+                btn.className = "suggestion-btn";
+                btn.textContent = sug;
+                btn.onclick = () => replaceWord(index, sug);
+                sugContainer.appendChild(btn);
+            });
+        } else {
+            sugContainer.innerHTML = "<small style='color:#666;'>کوئی تجویز نہیں ملی</small>";
+        }
     });
 }
 
@@ -81,8 +115,33 @@ async function replaceWord(index, newWord) {
         error.range.insertText(newWord, "Replace");
         await context.sync();
     });
+    // Remove from UI after replacement
     errors.splice(index, 1);
     displayResults();
+}
+
+// Define ignoreError which was being called but not defined
+function ignoreError(index) {
+    errors.splice(index, 1);
+    displayResults();
+}
+
+async function addCustomWord() {
+    const newWordInput = document.getElementById("newWord");
+    const word = newWordInput.value.trim().normalize('NFC');
+    
+    if (!word) {
+        showStatus("براہ کرم لفظ درج کریں", "error", "wordStatus");
+        return;
+    }
+    
+    // Check if dictionary has an addWord method (from your wordlist.js)
+    if (dictionary.addWord && dictionary.addWord(word)) {
+        showStatus(`"${word}" لغت میں شامل کر دیا گیا`, "success", "wordStatus");
+        newWordInput.value = "";
+    } else {
+        showStatus("لفظ پہلے سے موجود ہے یا خرابی آئی", "error", "wordStatus");
+    }
 }
 
 function showStatus(message, type, elementId = "documentStatus") {
@@ -90,6 +149,7 @@ function showStatus(message, type, elementId = "documentStatus") {
     statusDiv.textContent = message;
     statusDiv.className = `status ${type}`;
     statusDiv.style.display = "block";
+    setTimeout(() => { statusDiv.style.display = "none"; }, 4000);
 }
 
 function showLoading(show) {
