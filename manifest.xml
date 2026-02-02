@@ -5,7 +5,7 @@
            xsi:type="TaskPaneApp">
     
     <Id>c5e8b5a3-7d4f-4a8b-9c2d-1e3f5a7b9c0d</Id>
-    <Version>1.0.0.6</Version> <ProviderName>Torwali Developer</ProviderName>
+    <Version>1.0.0.7</Version> <ProviderName>Torwali Developer</ProviderName>
     <DefaultLocale>en-US</DefaultLocale>
     <DisplayName DefaultValue="Torwali Spell Checker"/>
     <Description DefaultValue="Torwali language spell checker for Office"/>
